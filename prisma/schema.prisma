@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          Role           @default(STUDENT)
+  isSuspended   Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  batchId       String?
+  notifications Notification[]
+  submissions   Submission[]
+  batch         Batch?         @relation(fields: [batchId], references: [id])
+
+  @@index([role])
+  @@index([createdAt])
+}
+
+model Assignment {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  thmRoomUrl  String
+  deadline    DateTime
+  createdAt   DateTime     @default(now())
+  batchId     String?
+  batch       Batch?       @relation(fields: [batchId], references: [id])
+  submissions Submission[]
+
+  @@index([deadline])
+}
+
+model Submission {
+  id            String           @id @default(cuid())
+  studentId     String
+  assignmentId  String?
+  submittedUrl  String
+  proofImageUrl String
+  proofHash     String?
+  status        SubmissionStatus @default(PENDING)
+  submittedAt   DateTime         @default(now())
+  feedback      String?
+  reviewedAt    DateTime?
+  attemptCount  Int              @default(1)
+  customLabName String?
+  assignment    Assignment?      @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student       User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, assignmentId])
+  @@index([studentId])
+  @@index([assignmentId])
+  @@index([status, submittedAt])
+}
+
+model Batch {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+  assignments Assignment[]
+  users       User[]
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([entity, entityId])
+}
+
+model AssignmentTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  thmRoomUrl  String
+  createdAt   DateTime @default(now())
+}
+
+enum Role {
+  STUDENT
+  MANAGER
+}
+
+enum SubmissionStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}

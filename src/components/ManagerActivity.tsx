@@ -1,0 +1,4 @@
+"use client";
+import {useEffect,useState} from "react";
+type Event={id:string;action:string;entity:string;entityId:string|null;actorId:string|null;createdAt:string};
+export function ManagerActivity(){const [events,setEvents]=useState<Event[]>([]);useEffect(()=>{fetch("/api/audit-log").then(r=>r.ok?r.json():null).then(j=>{if(j?.data)setEvents(j.data)}).catch(()=>{})},[]);return <section className="mb-8 rounded-2xl border bg-white p-5"><h2 className="font-bold">Recent manager activity</h2><div className="mt-3 space-y-2">{events.slice(0,8).map(e=><div key={e.id} className="flex flex-wrap justify-between gap-2 border-b pb-2 text-sm"><span><b>{e.action.replaceAll("_"," ")}</b> · {e.entity} {e.entityId?`(${e.entityId.slice(0,8)})`:""}</span><time className="text-xs text-slate-500">{new Date(e.createdAt).toLocaleString()}</time></div>)}{!events.length&&<p className="text-sm text-slate-500">No recorded activity yet.</p>}</div></section>}
